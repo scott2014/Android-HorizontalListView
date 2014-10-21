@@ -1,29 +1,4 @@
-/*
- * The MIT License Copyright (c) 2011 Paul Soucy (paul@dev-smart.com)
- * The MIT License Copyright (c) 2013 MeetMe, Inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
 
-// @formatter:off
-/*
- * This is based on HorizontalListView.java from: https://github.com/dinocore1/DevsmartLib-Android
- * It has been substantially rewritten and added to from the original version.
- */
-// @formatter:on
 package com.meetme.android.horizontallistview;
 
 import android.annotation.SuppressLint;
@@ -57,147 +32,117 @@ import java.util.List;
 import java.util.Queue;
 
 // @formatter:off
-/**
- * A view that shows items in a horizontally scrolling list. The items
- * come from the {@link ListAdapter} associated with this view. <br>
- * <br>
- * <b>Limitations:</b>
- * <ul>
+/*
  * <li>Does not support keyboard navigation</li>
  * <li>Does not support scroll bars<li>
  * <li>Does not support header or footer views<li>
  * <li>Does not support disabled items<li>
- * </ul>
- * <br>
- * <b>Custom XML Parameters Supported:</b><br>
- * <br>
- * <ul>
- * <li><b>divider</b> - The divider to use between items. This can be a color or a drawable. If a drawable is used
- * dividerWidth will automatically be set to the intrinsic width of the provided drawable, this can be overriden by providing a dividerWidth.</li>
- * <li><b>dividerWidth</b> - The width of the divider to be drawn.</li>
- * <li><b>android:requiresFadingEdge</b> - If horizontal fading edges are enabled this view will render them</li>
- * <li><b>android:fadingEdgeLength</b> - The length of the horizontal fading edges</li>
- * </ul>
  */
 // @formatter:on
 public class HorizontalListView extends AdapterView<ListAdapter> {
     /** Defines where to insert items into the ViewGroup, as defined in {@code ViewGroup #addViewInLayout(View, int, LayoutParams, boolean)} */
-    private static final int INSERT_AT_END_OF_LIST = -1;
+    //定义插入到ViewGroup位置为列尾
+	private static final int INSERT_AT_END_OF_LIST = -1;
+	//插入到列头
     private static final int INSERT_AT_START_OF_LIST = 0;
 
-    /** The velocity to use for overscroll absorption */
+    //默认吸收速率
     private static final float FLING_DEFAULT_ABSORB_VELOCITY = 30f;
 
-    /** The friction amount to use for the fling tracker */
+    //用于跟踪的摩擦量
     private static final float FLING_FRICTION = 0.009f;
-
-    /** Used for tracking the state data necessary to restore the HorizontalListView to its previous state after a rotation occurs */
+    
+    //用于跟踪状态数据用于讲ListView恢复到当前状态
     private static final String BUNDLE_ID_CURRENT_X = "BUNDLE_ID_CURRENT_X";
 
-    /** The bundle id of the parents state. Used to restore the parent's state after a rotation occurs */
+    //上一次状态的Bundle_Id,用于恢复到上一次状态
     private static final String BUNDLE_ID_PARENT_STATE = "BUNDLE_ID_PARENT_STATE";
 
-    /** Tracks ongoing flings */
+    //跟踪滚动状态
     protected Scroller mFlingTracker = new Scroller(getContext());
 
-    /** Gesture listener to receive callbacks when gestures are detected */
+   //当手势被检测到时用于回调
     private final GestureListener mGestureListener = new GestureListener();
 
-    /** Used for detecting gestures within this view so they can be handled */
+    //用于检测以便他们能够回调
     private GestureDetector mGestureDetector;
 
-    /** This tracks the starting layout position of the leftmost view */
+    //跟踪最左侧视图起始布局位置
     private int mDisplayOffset;
-
-    /** Holds a reference to the adapter bound to this view */
+    
+    //持有一个引用绑定数据到这个视图
     protected ListAdapter mAdapter;
-
-    /** Holds a cache of recycled views to be reused as needed */
+    
+    //回收视图缓存
     private List<Queue<View>> mRemovedViewsCache = new ArrayList<Queue<View>>();
 
-    /** Flag used to mark when the adapters data has changed, so the view can be relaid out */
+    //ListView视图数据改变
     private boolean mDataChanged = false;
 
-    /** Temporary rectangle to be used for measurements */
+    //临时用于测量的矩形
     private Rect mRect = new Rect();
 
-    /** Tracks the currently touched view, used to delegate touches to the view being touched */
+    //跟踪当前接触的视图,用于代表正在碰触的视图
     private View mViewBeingTouched = null;
-
-    /** The width of the divider that will be used between list items */
+    
+    //分割线的宽度
     private int mDividerWidth = 0;
 
-    /** The drawable that will be used as the list divider */
+    //divider drawable
     private Drawable mDivider = null;
-
-    /** The x position of the currently rendered view */
+    
+    //当前渲染视图的x坐标
     protected int mCurrentX;
-
-    /** The x position of the next to be rendered view */
+    
+    //下一个渲染视图的x坐标
     protected int mNextX;
 
-    /** Used to hold the scroll position to restore to post rotate */
+    //用于持有滚动位置用于恢复到之前状态
     private Integer mRestoreX = null;
-
-    /** Tracks the maximum possible X position, stays at max value until last item is laid out and it can be determined */
+    
+    //用于跟踪最大可能的x坐标位置
     private int mMaxX = Integer.MAX_VALUE;
 
-    /** The adapter index of the leftmost view currently visible */
+    //最左侧当前可见的adapter索引
     private int mLeftViewAdapterIndex;
-
-    /** The adapter index of the rightmost view currently visible */
+    
+    //最右侧可见的adapter索引
     private int mRightViewAdapterIndex;
 
-    /** This tracks the currently selected accessibility item */
+    //当前选中的adapter索引
     private int mCurrentlySelectedAdapterIndex;
 
-    /**
-     * Callback interface to notify listener that the user has scrolled this view to the point that it is low on data.
-     */
+    //回调监听器用于通知用户已经滚动这个视图到了最低的那个点
     private RunningOutOfDataListener mRunningOutOfDataListener = null;
 
-    /**
-     * This tracks the user value set of how many items from the end will be considered running out of data.
-     */
+    //用光了数据阀值
     private int mRunningOutOfDataThreshold = 0;
 
-    /**
-     * Tracks if we have told the listener that we are running low on data. We only want to tell them once.
-     */
+    //跟踪是否我们已经告诉监听器我们数据过低,我们只告诉他们一次
     private boolean mHasNotifiedRunningLowOnData = false;
-
-    /**
-     * Callback interface to be invoked when the scroll state has changed.
-     */
+    
+    //滚动状态改变的时候调用接口
     private OnScrollStateChangedListener mOnScrollStateChangedListener = null;
 
-    /**
-     * Represents the current scroll state of this view. Needed so we can detect when the state changes so scroll listener can be notified.
-     */
+    //呈现当前接口的滚动状态
     private OnScrollStateChangedListener.ScrollState mCurrentScrollState = OnScrollStateChangedListener.ScrollState.SCROLL_STATE_IDLE;
 
-    /**
-     * Tracks the state of the left edge glow.
-     */
+    //跟踪左侧边缘发光状态
     private EdgeEffectCompat mEdgeGlowLeft;
-
-    /**
-     * Tracks the state of the right edge glow.
-     */
+    
+    //跟踪右侧边缘发光状态
     private EdgeEffectCompat mEdgeGlowRight;
 
-    /** The height measure spec for this view, used to help size children views */
+    //当前视图的测量高度,用于子视图布局
     private int mHeightMeasureSpec;
 
-    /** Used to track if a view touch should be blocked because it stopped a fling */
+    //用于跟踪是否触摸动作应该被阻止
     private boolean mBlockTouchAction = false;
 
-    /** Used to track if the parent vertically scrollable view has been told to DisallowInterceptTouchEvent */
+    //用于跟踪是否父垂直滚动视图已经被告知不允许拦截touch事件
     private boolean mIsParentVerticiallyScrollableViewDisallowingInterceptTouchEvent = false;
 
-    /**
-     * The listener that receives notifications when this view is clicked.
-     */
+    //点击监听器
     private OnClickListener mOnClickListener;
 
     public HorizontalListView(Context context, AttributeSet attrs) {
@@ -208,22 +153,23 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         bindGestureDetector();
         initView();
         retrieveXmlConfiguration(context, attrs);
+        //如果需要重绘,必须将此标记设置为false
         setWillNotDraw(false);
-
-        // If the OS version is high enough then set the friction on the fling tracker */
+        
+        //跟踪操作系统摩擦量
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             HoneycombPlus.setFriction(mFlingTracker, FLING_FRICTION);
         }
     }
 
-    /** Registers the gesture detector to receive gesture notifications for this view */
+   //注册手势监听器用于获取手势通知
     private void bindGestureDetector() {
-        // Generic touch listener that can be applied to any view that needs to process gestures
-        final View.OnTouchListener gestureListenerHandler = new View.OnTouchListener() {
+        //通用的触摸监听器,可以用于任意视图的手势监听
+    	final View.OnTouchListener gestureListenerHandler = new View.OnTouchListener() {
             @Override
             public boolean onTouch(final View v, final MotionEvent event) {
-                // Delegate the touch event to our gesture detector
-                return mGestureDetector.onTouchEvent(event);
+                //代理触摸事件到我们的手势检测类
+            	return mGestureDetector.onTouchEvent(event);
             }
         };
 
@@ -231,12 +177,10 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
     }
 
     /**
-     * When this HorizontalListView is embedded within a vertical scrolling view it is important to disable the parent view from interacting with
-     * any touch events while the user is scrolling within this HorizontalListView. This will start at this view and go up the view tree looking
-     * for a vertical scrolling view. If one is found it will enable or disable parent touch interception.
-     *
      * @param disallowIntercept If true the parent will be prevented from intercepting child touch events
      */
+    
+    //如果HorizontalListView内嵌到垂直的ScrollView的时候,必须禁止父视图与用户的任何交互
     private void requestParentListViewToNotInterceptTouchEvents(Boolean disallowIntercept) {
         // Prevent calling this more than once needlessly
         if (mIsParentVerticiallyScrollableViewDisallowingInterceptTouchEvent != disallowIntercept) {
@@ -255,12 +199,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         }
     }
 
-    /**
-     * Parse the XML configuration for this widget
-     *
-     * @param context Context used for extracting attributes
-     * @param attrs The Attribute Set containing the ColumnView attributes
-     */
+    //提取xml配置设置ListView的相关属性
     private void retrieveXmlConfiguration(Context context, AttributeSet attrs) {
         if (attrs != null) {
             TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.HorizontalListView);
@@ -281,7 +220,10 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             a.recycle();
         }
     }
-
+    
+    
+    //============================================
+    //用于状态恢复
     @Override
     public Parcelable onSaveInstanceState() {
         Bundle bundle = new Bundle();
@@ -307,13 +249,11 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             super.onRestoreInstanceState(bundle.getParcelable(BUNDLE_ID_PARENT_STATE));
         }
     }
-
-    /**
-     * Sets the drawable that will be drawn between each item in the list. If the drawable does
-     * not have an intrinsic width, you should also call {@link #setDividerWidth(int)}
-     *
-     * @param divider The drawable to use.
-     */
+    //============================================================
+    
+    
+    //间隔
+    //getInstrinsicWidth  获取单位为dp的组件宽度
     public void setDivider(Drawable divider) {
         mDivider = divider;
 
@@ -324,16 +264,14 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         }
     }
 
-    /**
-     * Sets the width of the divider that will be drawn between each item in the list. Calling
-     * this will override the intrinsic width as set by {@link #setDivider(Drawable)}
-     *
-     * @param width The width of the divider in pixels.
-     */
+   //设置宽度
     public void setDividerWidth(int width) {
         mDividerWidth = width;
+        
+        /*requestLayout：当view确定自身已经不再适合现有的区域时，该view本身调用这个方法要求parent view重新调用他的onMeasure onLayout来对重新设置自己位置。
 
-        // Force the view to rerender itself
+        特别的当view的layoutparameter发生改变，并且它的值还没能应用到view上，这时候适合调用这个方法*/
+        //强制视图渲染自身
         requestLayout();
         invalidate();
     }
@@ -348,14 +286,14 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         setCurrentScrollState(OnScrollStateChangedListener.ScrollState.SCROLL_STATE_IDLE);
     }
 
-    /** Will re-initialize the HorizontalListView to remove all child views rendered and reset to initial configuration. */
+    //重新初始化HorizontalListView 移除所有的子视图,重置到初始配置
     private void reset() {
         initView();
         removeAllViewsInLayout();
         requestLayout();
     }
 
-    /** DataSetObserver used to capture adapter data change events */
+    //用于捕获adapter data改变事件
     private DataSetObserver mAdapterDataObserver = new DataSetObserver() {
         @Override
         public void onChanged() {
@@ -384,17 +322,21 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             requestLayout();
         }
     };
-
+    
+    //设置当前选中的item
     @Override
     public void setSelection(int position) {
         mCurrentlySelectedAdapterIndex = position;
     }
-
+    
+    //获取选中的视图
     @Override
     public View getSelectedView() {
         return getChild(mCurrentlySelectedAdapterIndex);
     }
-
+    
+    
+    //设置Adapter
     @Override
     public void setAdapter(ListAdapter adapter) {
         if (mAdapter != null) {
@@ -418,11 +360,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         return mAdapter;
     }
 
-    /**
-     * Will create and initialize a cache for the given number of different types of views.
-     *
-     * @param viewTypeCount - The total number of different views supported
-     */
+    //初始化回收视图缓存
     private void initializeRecycledViewCache(int viewTypeCount) {
         // The cache is created such that the response from mAdapter.getItemViewType is the array index to the correct cache for that item.
         mRemovedViewsCache.clear();
@@ -431,12 +369,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         }
     }
 
-    /**
-     * Returns a recycled view from the cache that can be reused, or null if one is not available.
-     *
-     * @param adapterIndex
-     * @return
-     */
+    //从缓存中返回一个能被使用的回收视图,如果没有一个可以使用就返回null
     private View getRecycledView(int adapterIndex) {
         int itemViewType = mAdapter.getItemViewType(adapterIndex);
 
@@ -447,12 +380,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         return null;
     }
 
-    /**
-     * Adds the provided view to a recycled views cache.
-     *
-     * @param adapterIndex
-     * @param view
-     */
+    //增加视图到回收缓存
     private void recycleView(int adapterIndex, View view) {
         // There is one Queue of views for each different type of view.
         // Just add the view to the pile of other views of the same type.
@@ -462,23 +390,20 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             mRemovedViewsCache.get(itemViewType).offer(view);
         }
     }
-
+    
+    //视图类型是否已经失效
     private boolean isItemViewTypeValid(int itemViewType) {
         return itemViewType < mRemovedViewsCache.size();
     }
 
-    /** Adds a child to this viewgroup and measures it so it renders the correct size */
+    //增加一个子视图到ViewGroup并检测它是否已经渲染到了正确的尺寸
     private void addAndMeasureChild(final View child, int viewPos) {
         LayoutParams params = getLayoutParams(child);
         addViewInLayout(child, viewPos, params, true);
         measureChild(child);
     }
-
-    /**
-     * Measure the provided child.
-     *
-     * @param child The child.
-     */
+    
+    //检测提供的子类
     private void measureChild(View child) {
         ViewGroup.LayoutParams childLayoutParams = getLayoutParams(child);
         int childHeightSpec = ViewGroup.getChildMeasureSpec(mHeightMeasureSpec, getPaddingTop() + getPaddingBottom(), childLayoutParams.height);
@@ -492,8 +417,8 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
 
         child.measure(childWidthSpec, childHeightSpec);
     }
-
-    /** Gets a child's layout parameters, defaults if not available. */
+    
+    //得到子视图的布局参数
     private ViewGroup.LayoutParams getLayoutParams(View child) {
         ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
         if (layoutParams == null) {
@@ -504,6 +429,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         return layoutParams;
     }
 
+    //布局改变回调
     @SuppressLint("WrongCall")
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
@@ -588,7 +514,8 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             ViewCompat.postOnAnimation(this, mDelayedLayout);
         }
     }
-
+    
+    //得到左侧边缘强度
     @Override
     protected float getLeftFadingEdgeStrength() {
         int horizontalFadingEdgeLength = getHorizontalFadingEdgeLength();
@@ -605,6 +532,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         }
     }
 
+    //得到右侧边缘强度
     @Override
     protected float getRightFadingEdgeStrength() {
         int horizontalFadingEdgeLength = getHorizontalFadingEdgeLength();
@@ -621,7 +549,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         }
     }
 
-    /** Determines the current fling absorb velocity */
+    //决定当前吸收速率
     private float determineFlingAbsorbVelocity() {
         // If the OS version is high enough get the real velocity */
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
@@ -633,8 +561,8 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             return FLING_DEFAULT_ABSORB_VELOCITY;
         }
     }
-
-    /** Use to schedule a request layout via a runnable */
+    
+    //用于计划请求布局通过runnable对象
     private Runnable mDelayedLayout = new Runnable() {
         @Override
         public void run() {
@@ -657,6 +585,8 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
      *
      * @return true if the maxx position was just determined
      */
+    
+    //决定最大的X位置,这是一个最远用于可以滚动的屏幕,直到Adapter item已经布局到可能计算的地方
     private boolean determineMaxX() {
         // If the last view has been laid out, then we can determine the maximum x position
         if (isLastItemInAdapter(mRightViewAdapterIndex)) {
@@ -683,6 +613,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
     }
 
     /** Adds children views to the left and right of the current views until the screen is full */
+    //增加子视图到当前视图的左右,直到屏幕填满
     private void fillList(final int dx) {
         // Get the rightmost child and determine its right edge
         int edge = 0;
@@ -705,6 +636,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         fillListLeft(edge, dx);
     }
 
+    //移除不可见的子视图
     private void removeNonVisibleChildren(final int dx) {
         View child = getLeftmostChild();
 
@@ -738,7 +670,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             child = getRightmostChild();
         }
     }
-
+    
     private void fillListRight(int rightEdge, final int dx) {
         // Loop adding views to the right until the screen is filled
         while (rightEdge + dx + mDividerWidth < getWidth() && mRightViewAdapterIndex + 1 < mAdapter.getCount()) {
@@ -801,20 +733,17 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         }
     }
 
-    /** Gets the current child that is leftmost on the screen. */
+    //得到当前屏幕最左边的子视图
     private View getLeftmostChild() {
         return getChildAt(0);
     }
-
-    /** Gets the current child that is rightmost on the screen. */
+    
+    //得到当前屏幕最右边的子视图
     private View getRightmostChild() {
         return getChildAt(getChildCount() - 1);
     }
 
-    /**
-     * Finds a child view that is contained within this view, given the adapter index.
-     * @return View The child view, or or null if not found.
-     */
+    //得到一个包含在当前视图里面的子视图,并获取该子视图的索引
     private View getChild(int adapterIndex) {
         if (adapterIndex >= mLeftViewAdapterIndex && adapterIndex <= mRightViewAdapterIndex) {
             return getChildAt(adapterIndex - mLeftViewAdapterIndex);
@@ -823,15 +752,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         return null;
     }
 
-    /**
-     * Returns the index of the child that contains the coordinates given.
-     * This is useful to determine which child has been touched.
-     * This can be used for a call to {@link #getChildAt(int)}
-     *
-     * @param x X-coordinate
-     * @param y Y-coordinate
-     * @return The index of the child that contains the coordinates. If no child is found then returns -1
-     */
+    //返回指定坐标子视图的索引
     private int getChildIndex(final int x, final int y) {
         int childCount = getChildCount();
 
@@ -844,13 +765,13 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
 
         return -1;
     }
-
-    /** Simple convenience method for determining if this index is the last index in the adapter */
+    
+    //决定是否当前索引是最后一个索引
     private boolean isLastItemInAdapter(int index) {
         return index == mAdapter.getCount() - 1;
     }
-
-    /** Gets the height in px this view will be rendered. (padding removed) */
+    
+    //获取将被渲染的视图高度(px)
     private int getRenderHeight() {
         return getHeight() - getPaddingTop() - getPaddingBottom();
     }
@@ -859,14 +780,15 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
     private int getRenderWidth() {
         return getWidth() - getPaddingLeft() - getPaddingRight();
     }
-
-    /** Scroll to the provided offset */
+    
+    //滚动到提供的offset值
     public void scrollTo(int x) {
         mFlingTracker.startScroll(mNextX, 0, x - mNextX, 0);
         setCurrentScrollState(OnScrollStateChangedListener.ScrollState.SCROLL_STATE_FLING);
         requestLayout();
     }
-
+    
+    //获取第一个可见的位置
     @Override
     public int getFirstVisiblePosition() {
         return mLeftViewAdapterIndex;
@@ -877,6 +799,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
         return mRightViewAdapterIndex;
     }
 
+    //绘画超出部分的光晕效果
     /** Draws the overscroll edge glow effect on the left and right sides of the horizontal list */
     private void drawEdgeGlow(Canvas canvas) {
         if (mEdgeGlowLeft != null && !mEdgeGlowLeft.isFinished() && isEdgeGlowEnabled()) {
@@ -908,7 +831,8 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             canvas.restoreToCount(restoreCount);
         }
     }
-
+    
+    //画间隔
     /** Draws the dividers that go in between the horizontal list view items */
     private void drawDividers(Canvas canvas) {
         final int count = getChildCount();
